@@ -4,7 +4,6 @@ from gpytorch.kernels import RBFKernel
 import torch
 import numpy as np
 
-
 ### MEAN FUNC, COVAR KERNEL ###
 
 #TODO: assert input shape matches num interventional nodes
