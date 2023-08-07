@@ -30,15 +30,6 @@ class CausalMean(Mean):
 
         return output
 
-class TestKernel(RBFKernel):
-    def __init__(self, ard_num_dims=None, batch_shape=None, active_dims=None, lengthscale_prior=None, lengthscale_constraint=None, eps=1e-06, **kwargs):
-        super(TestKernel, self).__init__(ard_num_dims, batch_shape, active_dims, lengthscale_prior, lengthscale_constraint, eps, **kwargs)
-
-    def forward(self, x1, x2, diag=False, **params):
-        mat = super().forward(x1, x2, diag, **params)
-        print(mat.size())
-        return mat
-
 class CausalRBF(RBFKernel):
     # Inherit from base RBFKernel class, add additional information about interventional variable(s) and SCM
     def __init__(self, interventional_variable, causal_model, ard_num_dims=None, batch_shape=None, active_dims=None, lengthscale_prior=None, lengthscale_constraint=None, eps=1e-06, **kwargs):

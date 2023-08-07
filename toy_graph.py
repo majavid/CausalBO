@@ -1,7 +1,5 @@
-import numpy as np
-import math
-import pandas as pd
-import do_calculus
+from pandas import DataFrame
+from do_calculus import SCM
 import torch
 
 class ToyGraph(object):
@@ -32,9 +30,9 @@ class ToyGraph(object):
         # Interventional domain
         self.interventional_domain = {'X': [-5,5], 'Z': [-5,20]}
         # Graph structure
-        self.graph = do_calculus.SCM([('X', 'Z'), ('Z', 'Y')])
+        self.graph = SCM([('X', 'Z'), ('Z', 'Y')])
         # Observational data samples
-        self.observational_samples = pd.DataFrame()
+        self.observational_samples = DataFrame()
         # Objective function
         self.obj_func = {'X': lambda x: ToyGraph.Y(ToyGraph.Z(ToyGraph.X(x))),
                          'Z': lambda z: ToyGraph.Y(ToyGraph.Z(z)),
