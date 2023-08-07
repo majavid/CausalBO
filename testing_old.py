@@ -417,7 +417,11 @@ def test():
     # train_Y=torch.tensor(initial_intervention_points, dtype=torch.float64)
 
     train_X = torch.stack((torch.tensor(observational_samples['X']), torch.tensor(observational_samples['Z'])), dim=1)
+    train_X - torch.tensor(observational_samples['X']).unsqueeze(1)
     train_Y = torch.tensor(observational_samples['Y']).unsqueeze(1)
+
+    print(train_X)
+    print(train_Y)
 
     model = SingleTaskGP(train_X=train_X, train_Y=train_Y,
                                 covar_module=RBFKernel(),

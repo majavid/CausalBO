@@ -1,7 +1,7 @@
 from numpy import meshgrid, vstack
 from pandas import DataFrame
 from scipy.spatial import ConvexHull
-
+import torch
 
 # Create subdictionary containing only keys
 def subdict_with_keys(dict: dict, keys: list[str]):
@@ -25,6 +25,6 @@ def calculate_epsilon(observational_samples: DataFrame, interventional_domain: d
 
 # Convert DataFrame to torch compatible tensor.
 def df_to_tensor(df: DataFrame):
-    return tensor(df.to_numpy())
+    return torch.tensor(df.to_numpy())
 
 

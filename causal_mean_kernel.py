@@ -2,7 +2,6 @@ from do_calculus import SCM, E_output_given_do, V_output_given_do
 from gpytorch.means.mean import Mean
 from gpytorch.kernels import RBFKernel
 import torch
-import numpy as np
 
 ### MEAN FUNC, COVAR KERNEL ###
 
@@ -30,7 +29,15 @@ class CausalMean(Mean):
         output = torch.reshape(mean_output, shape[:-1])
 
         return output
-    
+
+class TestKernel(RBFKernel):
+    def __init__(self, ard_num_dims=None, batch_shape=None, active_dims=None, lengthscale_prior=None, lengthscale_constraint=None, eps=1e-06, **kwargs):
+        super(TestKernel, self).__init__(ard_num_dims, batch_shape, active_dims, lengthscale_prior, lengthscale_constraint, eps, **kwargs)
+
+    def forward(self, x1, x2, diag=False, **params):
+        mat = super().forward(x1, x2, diag, **params)
+        print(mat.size())
+        return mat
 
 class CausalRBF(RBFKernel):
     # Inherit from base RBFKernel class, add additional information about interventional variable(s) and SCM
@@ -42,6 +49,9 @@ class CausalRBF(RBFKernel):
     def forward(self, x1, x2, diag=False, **params):
         x1_shape = x1.shape
         x2_shape = x2.shape
+
+        print(f'X1: {x1.size()}')
+        print(f'X2: {x2.size()}')
         
         # Flatten input tensor to list of lists for DoWhy to play nice with.
         x1_reshape = torch.reshape(x1, (-1, x1.shape[-1]))
@@ -68,8 +78,13 @@ class CausalRBF(RBFKernel):
         variances_x1_reshape = torch.reshape(variances_x1, x1_shape[:-1] + (1,))
         variances_x2_reshape = torch.reshape(variances_x2, x2_shape[:-1] + (1,))
 
+        print(f'Var X1: {variances_x1_reshape.size()}')
+        print(f'Var X2: {variances_x2_reshape.size()}')
+
         # Create variance matrix of same shape as RBF output.
-        variances = (variances_x1_reshape * variances_x2_reshape).transpose(-2,-1)
+        variances = (variances_x1_reshape * variances_x2_reshape.transpose(-2,-1))
 
         # = k_RBF(x_s, x'_s) + sigma(x_s) * sigma(x'_s) 
+        rbf_out = super().forward(x1, x2, diag, **params)
+        print(f'RBF: {rbf_out.size()}')
         return super().forward(x1, x2, diag, **params) + variances
