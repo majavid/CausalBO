@@ -37,7 +37,7 @@ class SCM():
         gcm.fit(self.causal_model, observational_samples)
 
     # Perform intervention on node(s) by setting them to value(s)
-    def intervene(self, interventional_variable: list[str], interventional_value: list[float], input_tensor):
+    def intervene(self, interventional_variable: list[str], interventional_value: list[float]):
         #print(f"{interventional_variable}: {interventional_value} - tensor {input_tensor}")
         intervention_dict = {key: (lambda v: lambda x: v)(value) 
                                    for key, value in zip(interventional_variable, interventional_value)}
@@ -49,13 +49,13 @@ class SCM():
         return samples
 
 # Expectation given do is average of samples
-def E_output_given_do(interventional_variable: list[str], interventional_value: list[float], causal_model: SCM, input_tensor):
-    samples = causal_model.intervene(interventional_variable, interventional_value, input_tensor)
+def E_output_given_do(interventional_variable: list[str], interventional_value: list[float], causal_model: SCM):
+    samples = causal_model.intervene(interventional_variable, interventional_value)
     return np.mean(samples[f'{causal_model.output_node}'])
 
 # Variance given do is variance of samples
-def V_output_given_do(interventional_variable: list[str], interventional_value: list[float], causal_model: SCM, input_tensor):
-    samples = causal_model.intervene(interventional_variable, interventional_value, input_tensor)
+def V_output_given_do(interventional_variable: list[str], interventional_value: list[float], causal_model: SCM):
+    samples = causal_model.intervene(interventional_variable, interventional_value)
     return np.var(samples[f'{causal_model.output_node}'])
 
 ### MEAN FUNC, COVAR KERNEL ###
@@ -356,6 +356,13 @@ observational_samples['Y'] = obs_data_y
 
 # Declare graph
 toy_graph = SCM(nx.DiGraph([('X', 'Z'), ('Z', 'Y')]))
+toy_graph.fit(observational_samples)
+
+xs = np.arange(-5, 5, 0.01)
+ys = [E_output_given_do(interventional_variable=['X'], interventional_value=[x], causal_model=toy_graph) for x in xs]
+
+plt.plot(xs, ys)
+plt.show()
 
 # timing_graph(observational_samples=observational_samples,
 #         graph=toy_graph,
@@ -371,140 +378,139 @@ toy_graph = SCM(nx.DiGraph([('X', 'Z'), ('Z', 'Y')]))
 
 ## OLD TESTING CODE KEPT AROUND TO POTENTIALLY REFERENCE LATER? QUICKER THAN STACKOVERFLOW ##
 
-def test():
-    x_bounds = (-5, 5)
-    z_bounds = (-5, 20)
+# def test():
+#     x_bounds = (-5, 5)
+#     z_bounds = (-5, 20)
 
-    def X(input, noise_mean=0, noise_stdev=0):
-        return input + np.random.normal(noise_mean, noise_stdev)
+#     def X(input, noise_mean=0, noise_stdev=0):
+#         return input + np.random.normal(noise_mean, noise_stdev)
 
-    def Z(input, noise_mean=0, noise_stdev=0):
-        return (math.e ** -input) + np.random.normal(noise_mean, noise_stdev)
+#     def Z(input, noise_mean=0, noise_stdev=0):
+#         return (math.e ** -input) + np.random.normal(noise_mean, noise_stdev)
 
-    def Y(input, noise_mean=0, noise_stdev=0):  
-        return ((math.cos(input)) - (math.e ** (-input / 20))) + np.random.normal(noise_mean, noise_stdev)
+#     def Y(input, noise_mean=0, noise_stdev=0):  
+#         return ((math.cos(input)) - (math.e ** (-input / 20))) + np.random.normal(noise_mean, noise_stdev)
 
-    obj_func_x = np.linspace(*x_bounds, 1000)
-    obj_func_y = [Y(Z(X(x))) for x in obj_func_x]
-
-
-    obs_data_x = [X(np.random.normal(0, 1), noise_stdev=1) for x in obj_func_x]
-    obs_data_z = [Z(x, noise_stdev=1) for x in obs_data_x]
-    obs_data_y = [Y(z, noise_stdev=1) for z in obs_data_z]
-
-    observational_samples = pd.DataFrame()
-    observational_samples['X'] = obs_data_x
-    observational_samples['Z'] = obs_data_z
-    observational_samples['Y'] = obs_data_y
-
-    toy_graph = SCM(nx.DiGraph([('X', 'Z'), ('Z', 'Y')]))
-    # observational_samples = pd.DataFrame(pd.read_pickle('./Data/ToyGraph/observations.pkl'))
+#     obj_func_x = np.linspace(*x_bounds, 1000)
+#     obj_func_y = [Y(Z(X(x))) for x in obj_func_x]
 
 
-    # plt.scatter(observational_samples['X'], observational_samples['Y'])
-    # plt.show()
-    toy_graph.fit(observational_samples)
+#     obs_data_x = [X(np.random.normal(0, 1), noise_stdev=1) for x in obj_func_x]
+#     obs_data_z = [Z(x, noise_stdev=1) for x in obs_data_x]
+#     obs_data_y = [Y(z, noise_stdev=1) for z in obs_data_z]
 
-    intervention_cost = 1
+#     observational_samples = pd.DataFrame()
+#     observational_samples['X'] = obs_data_x
+#     observational_samples['Z'] = obs_data_z
+#     observational_samples['Y'] = obs_data_y
 
-    s = ['X']
-    #test_X = torch.stack((torch.linspace(*x_bounds, 200, dtype=torch.float64), torch.linspace(*z_bounds, 200, dtype=torch.float64)), dim=1)
-    test_X = torch.linspace(*x_bounds, 200, dtype=torch.float64)
-    #initial_intervention_points = [[E_output_given_do(interventional_variable=s, interventional_value=[x] * len(s), causal_model=toy_graph)] for x in [2.0, 0.0, -4.0]]
-    initial_intervention_points = [[Y(Z(X(x)))] for x in [2.0, 0.0, -4.0, 4.0]]
+#     toy_graph = SCM(nx.DiGraph([('X', 'Z'), ('Z', 'Y')]))
+#     # observational_samples = pd.DataFrame(pd.read_pickle('./Data/ToyGraph/observations.pkl'))
 
-    # train_X=torch.tensor([[2.0], [0.0], [-4.0], [4.0]], dtype=torch.float64)
-    # train_Y=torch.tensor(initial_intervention_points, dtype=torch.float64)
 
-    train_X = torch.stack((torch.tensor(observational_samples['X']), torch.tensor(observational_samples['Z'])), dim=1)
-    train_X - torch.tensor(observational_samples['X']).unsqueeze(1)
-    train_Y = torch.tensor(observational_samples['Y']).unsqueeze(1)
+#     # plt.scatter(observational_samples['X'], observational_samples['Y'])
+#     # plt.show()
+#     toy_graph.fit(observational_samples)
 
-    print(train_X)
-    print(train_Y)
+#     intervention_cost = 1
 
-    model = SingleTaskGP(train_X=train_X, train_Y=train_Y,
-                                covar_module=RBFKernel(),
-                                # covar_module=CausalRBF(
-                                #     output_variable=toy_graph.output_node,
-                                #     interventional_variable=s,
-                                #     causal_model=toy_graph),
-                                mean_module=CausalMean(
-                                    interventional_variable=s,
-                                    causal_model=toy_graph))
+#     s = ['X']
+#     #test_X = torch.stack((torch.linspace(*x_bounds, 200, dtype=torch.float64), torch.linspace(*z_bounds, 200, dtype=torch.float64)), dim=1)
+#     test_X = torch.linspace(*x_bounds, 200, dtype=torch.float64)
+#     #initial_intervention_points = [[E_output_given_do(interventional_variable=s, interventional_value=[x] * len(s), causal_model=toy_graph)] for x in [2.0, 0.0, -4.0]]
+#     initial_intervention_points = [[Y(Z(X(x)))] for x in [2.0, 0.0, -4.0, 4.0]]
 
-    # model = SingleTaskGP(train_X=train_X, train_Y=train_Y,
-    #                                 covar_module=RBFKernel(),
-    #                                 mean_module=ZeroMean())
+#     # train_X=torch.tensor([[2.0], [0.0], [-4.0], [4.0]], dtype=torch.float64)
+#     # train_Y=torch.tensor(initial_intervention_points, dtype=torch.float64)
 
-    mll = ExactMarginalLogLikelihood(likelihood=model.likelihood, model=model)
-    acqf = ExpectedImprovement(model, best_f=0)
-    fit_gpytorch_model(mll)
+#     train_X = torch.stack((torch.tensor(observational_samples['X']), torch.tensor(observational_samples['Z'])), dim=1)
+#     train_X - torch.tensor(observational_samples['X']).unsqueeze(1)
+#     train_Y = torch.tensor(observational_samples['Y']).unsqueeze(1)
 
-    candidates, _ = optimize_acqf(
-                acq_function=acqf,
-                bounds=torch.tensor([[-5.0], [5.0]]),
-                q=1,
-                num_restarts=10,
-                raw_samples=50,
-            )
+#     print(train_X)
+#     print(train_Y)
+
+#     model = SingleTaskGP(train_X=train_X, train_Y=train_Y,
+#                                 covar_module=RBFKernel(),
+#                                 # covar_module=CausalRBF(
+#                                 #     output_variable=toy_graph.output_node,
+#                                 #     interventional_variable=s,
+#                                 #     causal_model=toy_graph),
+#                                 mean_module=CausalMean(
+#                                     interventional_variable=s,
+#                                     causal_model=toy_graph))
+
+#     # model = SingleTaskGP(train_X=train_X, train_Y=train_Y,
+#     #                                 covar_module=RBFKernel(),
+#     #                                 mean_module=ZeroMean())
+
+#     mll = ExactMarginalLogLikelihood(likelihood=model.likelihood, model=model)
+#     acqf = ExpectedImprovement(model, best_f=0)
+#     fit_gpytorch_model(mll)
+
+#     candidates, _ = optimize_acqf(
+#                 acq_function=acqf,
+#                 bounds=torch.tensor([[-5.0], [5.0]]),
+#                 q=1,
+#                 num_restarts=10,
+#                 raw_samples=50,
+#             )
     
 
-    # mll = mll.to(train_X)
+#     # mll = mll.to(train_X)
 
-    # optimizer = SGD([{"params": model.parameters()}], lr=0.1)
+#     # optimizer = SGD([{"params": model.parameters()}], lr=0.1)
 
-    # NUM_EPOCHS = 150
+#     # NUM_EPOCHS = 150
 
-    # model.train()
-    # mll.train()
+#     # model.train()
+#     # mll.train()
 
-    # for epoch in range(NUM_EPOCHS):
-    #     # clear gradients
-    #     optimizer.zero_grad()
-    #     # forward pass through the model to obtain the output MultivariateNormal
-    #     output = model(train_X)
-    #     # Compute negative marginal log likelihood
-    #     loss = -mll(output, model.train_targets)
-    #     # back prop gradients
-    #     loss.backward()
-    #     # print every 10 iterations
-    #     optimizer.step()
+#     # for epoch in range(NUM_EPOCHS):
+#     #     # clear gradients
+#     #     optimizer.zero_grad()
+#     #     # forward pass through the model to obtain the output MultivariateNormal
+#     #     output = model(train_X)
+#     #     # Compute negative marginal log likelihood
+#     #     loss = -mll(output, model.train_targets)
+#     #     # back prop gradients
+#     #     loss.backward()
+#     #     # print every 10 iterations
+#     #     optimizer.step()
 
-    # model.eval()
-    # mll.eval()
-
-    # xs = np.arange(-5, 5, 0.01)
-    # ys = [E_output_given_do(interventional_variable=['X'], interventional_value=[x], causal_model=toy_graph) for x in xs]
+#     # model.eval()
+#     # mll.eval()
 
 
-    # f, ax = plt.subplots(1, 1, figsize=(6, 4))
-    # with torch.no_grad():
-    #     # compute posterior
-    #     posterior = model.posterior(test_X)
-    #     # Get upper and lower confidence bounds (2 standard deviations from the mean)
-    #     lower, upper = posterior.mvn.confidence_region()
-
-    #     ax.plot(obj_func_x, obj_func_y, "k")
-    #     # Plot objective
-    #     #plt.axhline(y=0, color='r', linestyle='-')
-    #     ax.plot(xs, ys, "r")
-    #     # Plot observational data
-    #     ax.scatter(observational_samples['X'], observational_samples['Y'])
-    #     # Plot training points as black stars
-    #     ax.plot(train_X.cpu().numpy(), train_Y.cpu().numpy(), "k*")
-    #     # Plot posterior means as blue line
-    #     ax.plot(test_X.cpu().numpy(), posterior.mean.cpu().numpy(), "b")
-    #     # Shade between the lower and upper confidence bounds
-    #     ax.fill_between(
-    #         test_X.cpu().numpy(), lower.cpu().numpy(), upper.cpu().numpy(), alpha=0.5
-    #     )
-    # ax.legend(["Ground truth", "m(x)", "D_O", "D_I", "GP model", "Confidence"])
-    # ax.set_title('Causal GP.')
-    # plt.xlabel('X')
-    # plt.ylabel('Y')
-    # plt.tight_layout()
-    # plt.show()
 
 
-test()
+#     # f, ax = plt.subplots(1, 1, figsize=(6, 4))
+#     # with torch.no_grad():
+#     #     # compute posterior
+#     #     posterior = model.posterior(test_X)
+#     #     # Get upper and lower confidence bounds (2 standard deviations from the mean)
+#     #     lower, upper = posterior.mvn.confidence_region()
+
+#     #     ax.plot(obj_func_x, obj_func_y, "k")
+#     #     # Plot objective
+#     #     #plt.axhline(y=0, color='r', linestyle='-')
+#     #     ax.plot(xs, ys, "r")
+#     #     # Plot observational data
+#     #     ax.scatter(observational_samples['X'], observational_samples['Y'])
+#     #     # Plot training points as black stars
+#     #     ax.plot(train_X.cpu().numpy(), train_Y.cpu().numpy(), "k*")
+#     #     # Plot posterior means as blue line
+#     #     ax.plot(test_X.cpu().numpy(), posterior.mean.cpu().numpy(), "b")
+#     #     # Shade between the lower and upper confidence bounds
+#     #     ax.fill_between(
+#     #         test_X.cpu().numpy(), lower.cpu().numpy(), upper.cpu().numpy(), alpha=0.5
+#     #     )
+#     # ax.legend(["Ground truth", "m(x)", "D_O", "D_I", "GP model", "Confidence"])
+#     # ax.set_title('Causal GP.')
+#     # plt.xlabel('X')
+#     # plt.ylabel('Y')
+#     # plt.tight_layout()
+#     # plt.show()
+
+
+# test()

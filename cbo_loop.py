@@ -20,16 +20,16 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
     D_o: DataFrame = observational_samples[:num_initial_obs]
     D_i: dict[DataFrame] = {}
     GPs: dict[SingleTaskGP] = {}
-    global_optimum: float
+    global_optimum: float = -20
     global_optimal_set: str = 'None'
 
-    if type_trial == 'min':
-        global_optimum = min(D_o[graph.output_node])
-    elif type_trial == 'max':
-        global_optimum = max(D_o[graph.output_node])
-    else:
-        print('Invalid type_trial, use either "min" or "max"')
-        return
+    # if type_trial == 'min':
+    #     global_optimum = min(D_o[graph.output_node])
+    # elif type_trial == 'max':
+    #     global_optimum = max(D_o[graph.output_node])
+    # else:
+    #     print('Invalid type_trial, use either "min" or "max"')
+    #     return
     
     # Initialize: Set D_i_0 = D_i and D_o_0 = D_o
     for s in exploration_set:
@@ -46,6 +46,8 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
         D_i[set_identifier]= DataFrame(columns=s + [graph.output_node])
     
     for t in range(num_steps):
+        print(f"Iteration {t}")
+        print(f"Current global optimum: {global_optimum}")
         uniform = np.random.uniform(0., 1.)
         if t == 0:
             epsilon = 1
@@ -69,7 +71,7 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
                 set_identifier = ''.join(s)
                 gp: SingleTaskGP = GPs[set_identifier]
                 interventional_data: DataFrame = D_i[set_identifier]
-
+                
                 acqf = ExpectedImprovement(gp, best_f=global_optimum)
                 candidates, _ = optimize_acqf(
                     acq_function=acqf,
@@ -114,8 +116,9 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
 
 
             print('Updating global optimum...')
-            global_optimum = torch.flatten(new_y)[0]
-            global_optimal_set = best_point[0]
+            if(global_optimum == None or torch.flatten(new_y)[0] > global_optimum):
+                global_optimum = torch.flatten(new_y)[0]
+                global_optimal_set = best_point[0]
 
     return (global_optimum, global_optimal_set, GPs[global_optimal_set], D_i[global_optimal_set], D_o)
 
