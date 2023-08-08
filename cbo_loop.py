@@ -14,7 +14,7 @@ from botorch.optim import optimize_acqf
 
 def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[list[str]], 
             num_steps: int, num_initial_obs: int, num_obs_per_step: int, num_max_allowed_obs: int,
-            interventional_domain: dict[list[float]], type_trial: Literal['min', 'max'], objective_function: dict):
+            interventional_domain: dict[list[float]], type_trial: Literal['min', 'max'], objective_function: dict, early_stopping_iters: int = 0):
     
     num_total_obs: int = num_initial_obs
     D_o: DataFrame = observational_samples[:num_initial_obs]
@@ -22,6 +22,8 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
     GPs: dict[SingleTaskGP] = {}
     global_optimum: float = -20
     global_optimal_set: str = 'None'
+    global_optimal_value: float = None
+    num_iters_without_improvement: int = 0
 
     # if type_trial == 'min':
     #     global_optimum = min(D_o[graph.output_node])
@@ -46,8 +48,12 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
         D_i[set_identifier]= DataFrame(columns=s + [graph.output_node])
     
     for t in range(num_steps):
+        if(early_stopping_iters != 0 and num_iters_without_improvement > early_stopping_iters):
+            print("Early stopping reached max num of iters without improvment.")
+            break
+
         print(f"Iteration {t}")
-        print(f"Current global optimum: {global_optimum}")
+        print(f"Current global optimal set-value-result = {global_optimal_set}: {global_optimal_value} -> {global_optimum}")
         uniform = np.random.uniform(0., 1.)
         if t == 0:
             epsilon = 1
@@ -98,12 +104,14 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
 
             # This is horrendous, fix later
             print(f'Updating D_i for {best_point[0]}...')
+            interventional_data = D_i[best_point[0]]
             interventional_data = concat(
                                 [interventional_data, 
                                  DataFrame([dict(zip(columns, x_values + torch.flatten(new_y).tolist()))])
                             ]) 
 
             print(f'Updating GP posterior for {best_point[0]}...')
+            gp = GPs[best_point[0]]
             gp.set_train_data(inputs=df_to_tensor(interventional_data.loc[:, interventional_data.columns != graph.output_node]),
                               targets=df_to_tensor(interventional_data[graph.output_node]),
                               strict=False)
@@ -119,6 +127,9 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
             if(global_optimum == None or torch.flatten(new_y)[0] > global_optimum):
                 global_optimum = torch.flatten(new_y)[0]
                 global_optimal_set = best_point[0]
+                global_optimal_value = torch.flatten(best_point[1])[0]
+            else:
+                num_iters_without_improvement += 1
 
     return (global_optimum, global_optimal_set, GPs[global_optimal_set], D_i[global_optimal_set], D_o)
 

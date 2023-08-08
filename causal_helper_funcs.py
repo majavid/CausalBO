@@ -2,6 +2,7 @@ from numpy import meshgrid, vstack
 from pandas import DataFrame
 from scipy.spatial import ConvexHull
 import torch
+import numpy as np
 
 # Create subdictionary containing only keys
 def subdict_with_keys(dict: dict, keys: list[str]):
@@ -15,9 +16,16 @@ def bounds_to_hull_points(domains: dict[list[float]]):
     return points
 
 # = (Vol(C(observational_samples)) / Vol(interventional_domain)) * (n / n_max)
+# Discards points with values that may be correct but lie outside of the interventional domain.
 def calculate_epsilon(observational_samples: DataFrame, interventional_domain: dict[list[float]], n_max: int):
     n = observational_samples.shape[0]
-    epsilon = (ConvexHull(observational_samples).volume / 
+
+    df = observational_samples
+    for k in interventional_domain.keys():
+        df = df[ (df[k] >= interventional_domain[k][0])
+               & (df[k] <= interventional_domain[k][1])]    
+        
+    epsilon = (ConvexHull(df).volume / 
                ConvexHull(
                     bounds_to_hull_points(interventional_domain))
                 .volume) * (n / n_max)
@@ -25,6 +33,6 @@ def calculate_epsilon(observational_samples: DataFrame, interventional_domain: d
 
 # Convert DataFrame to torch compatible tensor.
 def df_to_tensor(df: DataFrame):
-    return torch.tensor(df.to_numpy())
+    return torch.tensor(df.to_numpy().astype(np.float64))
 
 
