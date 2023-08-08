@@ -1,5 +1,5 @@
 from pandas import DataFrame
-from do_calculus import SCM
+from causalbo.do_calculus import SCM
 import torch
 
 class ToyGraph(object):
@@ -48,6 +48,9 @@ class ToyGraph(object):
         self.observational_samples['X'] = torch.flatten(obs_data_x).tolist()
         self.observational_samples['Z'] = torch.flatten(obs_data_z).tolist()
         self.observational_samples['Y'] = torch.flatten(obs_data_y).tolist()
+
+    def draw(self):
+        self.graph.draw()
 
     
 

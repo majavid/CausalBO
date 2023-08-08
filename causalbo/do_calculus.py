@@ -1,4 +1,4 @@
-from networkx import DiGraph
+from networkx import DiGraph, draw
 from dowhy import gcm
 from numpy import mean, var
 
@@ -34,6 +34,10 @@ class SCM():
                                              observed_data=self.observational_samples)
                                              #num_samples_to_draw=100)
         return samples
+    
+    # draw graph
+    def draw(self):
+        draw(self.graph, with_labels=True)
 
 # Expectation given do is average of samples
 def E_output_given_do(interventional_variable: list[str], interventional_value: list[float], causal_model: SCM):

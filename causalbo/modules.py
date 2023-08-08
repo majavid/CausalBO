@@ -1,4 +1,4 @@
-from do_calculus import SCM, E_output_given_do, V_output_given_do
+from causalbo.do_calculus import SCM, E_output_given_do, V_output_given_do
 from gpytorch.means.mean import Mean
 from gpytorch.kernels import RBFKernel
 import torch

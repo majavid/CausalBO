@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0",
+            "numpy>=1.23.5",
+            "pandas>=1.5.3",
+            "torch>=2.0.0",
+            "scipy>=1.8.1",
+            "botorch>=0.8.3",
+            "gpytorch>=1.9.1",
+            "dowhy>=0.9.1",
+            "networkx>=2.8.8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "CausalBO"
+version = "0.8.1"
+authors = [
+  { name="Jeremy Roberts", email="robertsj3@appstate.edu"},
+  { name="Mohammad Ali Javidian", email="javidianma@appstate.edu"},
+]
+description = "Package built on BoTorch and DoWhy that adds causality functionality to Bayesian optimization."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/majavid/CausalBO"
+"Bug Tracker" = "https://github.com/majavid/CausalBO/issues"

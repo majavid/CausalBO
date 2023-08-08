@@ -1,6 +1,6 @@
-from causal_mean_kernel import CausalMean, CausalRBF
-from do_calculus import SCM
-from causal_helper_funcs import calculate_epsilon, df_to_tensor, subdict_with_keys
+from causalbo.modules import CausalMean, CausalRBF
+from causalbo.do_calculus import SCM
+from causalbo.causal_helper_funcs import calculate_epsilon, df_to_tensor, subdict_with_keys
 import numpy as np
 from pandas import DataFrame, concat
 from typing import Literal
@@ -14,7 +14,8 @@ from botorch.optim import optimize_acqf
 
 def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[list[str]], 
             num_steps: int, num_initial_obs: int, num_obs_per_step: int, num_max_allowed_obs: int,
-            interventional_domain: dict[list[float]], type_trial: Literal['min', 'max'], objective_function: dict, early_stopping_iters: int = 0):
+            interventional_domain: dict[list[float]], type_trial: Literal['min', 'max'], objective_function: dict,
+            early_stopping_iters: int = 0, verbose: bool = False):
     
     num_total_obs: int = num_initial_obs
     D_o: DataFrame = observational_samples[:num_initial_obs]
@@ -63,7 +64,8 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
             epsilon = calculate_epsilon(observational_samples=D_o, interventional_domain=interventional_domain, n_max=num_max_allowed_obs)
 
         # Observe
-        print(f'Epsilon: {epsilon} - Uniform: {uniform}')
+        if verbose:
+            print(f'Epsilon: {epsilon} - Uniform: {uniform}')
         if(epsilon > uniform):
             print(f'Observing {num_obs_per_step} new data points.')
             num_total_obs += num_obs_per_step
@@ -98,19 +100,22 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
             
             new_y = objective_function[best_point[0]](best_point[1])
 
-            print(f'Optimal set-value pair: {best_point[0]} - {x_values}')
+            if verbose:
+                print(f'Optimal set-value pair: {best_point[0]} - {x_values}')
 
             columns = [*best_point[0], graph.output_node]
 
             # This is horrendous, fix later
-            print(f'Updating D_i for {best_point[0]}...')
+            if verbose:
+                print(f'Updating D_i for {best_point[0]}...')
             interventional_data = D_i[best_point[0]]
             interventional_data = concat(
                                 [interventional_data, 
                                  DataFrame([dict(zip(columns, x_values + torch.flatten(new_y).tolist()))])
                             ]) 
 
-            print(f'Updating GP posterior for {best_point[0]}...')
+            if verbose:
+                print(f'Updating GP posterior for {best_point[0]}...')
             gp = GPs[best_point[0]]
             gp.set_train_data(inputs=df_to_tensor(interventional_data.loc[:, interventional_data.columns != graph.output_node]),
                               targets=df_to_tensor(interventional_data[graph.output_node]),
@@ -122,8 +127,8 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
             GPs[best_point[0]] = gp
             D_i[best_point[0]] = interventional_data
 
-
-            print('Updating global optimum...')
+            if verbose:
+                print('Updating global optimum...')
             if(global_optimum == None or torch.flatten(new_y)[0] > global_optimum):
                 global_optimum = torch.flatten(new_y)[0]
                 global_optimal_set = best_point[0]
