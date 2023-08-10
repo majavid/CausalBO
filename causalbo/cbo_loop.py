@@ -25,14 +25,17 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
     global_optimal_set: str = 'None'
     global_optimal_value: float = None
     num_iters_without_improvement: int = 0
+    total_cost = 0
+    optimum_over_time: list = []
+    cost_over_time: list = []
 
-    # if type_trial == 'min':
-    #     global_optimum = min(D_o[graph.output_node])
-    # elif type_trial == 'max':
-    #     global_optimum = max(D_o[graph.output_node])
-    # else:
-    #     print('Invalid type_trial, use either "min" or "max"')
-    #     return
+    if type_trial == 'min':
+        global_optimum = max(D_o[graph.output_node])
+    elif type_trial == 'max':
+        global_optimum = min(D_o[graph.output_node])
+    else:
+        print('Invalid type_trial, use either "min" or "max"')
+        return
     
     # Initialize: Set D_i_0 = D_i and D_o_0 = D_o
     for s in exploration_set:
@@ -49,8 +52,10 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
         D_i[set_identifier]= DataFrame(columns=s + [graph.output_node])
     
     for t in range(num_steps):
+        optimum_over_time.append(global_optimum)
         if(early_stopping_iters != 0 and num_iters_without_improvement > early_stopping_iters):
             print("Early stopping reached max num of iters without improvment.")
+            cost_over_time.append(total_cost)
             break
 
         print(f"Iteration {t}")
@@ -71,8 +76,12 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
             num_total_obs += num_obs_per_step
             D_o = observational_samples[:num_total_obs]
             graph.fit(D_o)
+            total_cost += 1
+            cost_over_time.append(total_cost)
         # Intervene
         else:
+            total_cost += 10
+            cost_over_time.append(total_cost)
             print('Intervening...')
             solutions = {}
             for s in exploration_set:
@@ -80,7 +89,10 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
                 gp: SingleTaskGP = GPs[set_identifier]
                 interventional_data: DataFrame = D_i[set_identifier]
                 
-                acqf = ExpectedImprovement(gp, best_f=global_optimum)
+                if type_trial == 'max':
+                    acqf = ExpectedImprovement(gp, best_f=global_optimum)
+                else:
+                    acqf = ExpectedImprovement(gp, best_f=global_optimum, maximize=False)
                 candidates, _ = optimize_acqf(
                     acq_function=acqf,
                     bounds=torch.tensor(list(subdict_with_keys(interventional_domain, s).values()), dtype=torch.float64).t(),
@@ -121,6 +133,7 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
                               targets=df_to_tensor(interventional_data[graph.output_node]),
                               strict=False)
             
+            
             mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
             fit_gpytorch_model(mll)
 
@@ -129,14 +142,16 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
 
             if verbose:
                 print('Updating global optimum...')
-            if(global_optimum == None or torch.flatten(new_y)[0] > global_optimum):
+            if (global_optimum == None or 
+               (type_trial == 'max' and torch.flatten(new_y)[0] > global_optimum) or 
+               (type_trial == 'min' and torch.flatten(new_y)[0] < global_optimum)):
                 global_optimum = torch.flatten(new_y)[0]
                 global_optimal_set = best_point[0]
                 global_optimal_value = torch.flatten(best_point[1])[0]
             else:
                 num_iters_without_improvement += 1
 
-    return (global_optimum, global_optimal_set, GPs[global_optimal_set], D_i[global_optimal_set], D_o)
+    return (global_optimum, global_optimal_set, GPs[global_optimal_set], D_i[global_optimal_set], D_o, cost_over_time, optimum_over_time)
 
 
 

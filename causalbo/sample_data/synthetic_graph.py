@@ -2,21 +2,32 @@ from pandas import DataFrame
 from causalbo.do_calculus import SCM
 import torch
 
-class ToyGraph(object):
-    def X(input_tensor, noise_mean=0, noise_stdev=0):
+class SyntheticGraph(object):
+    def age(num_data_points):
+        return (55 - 75) * torch.rand(num_data_points, 1) + 75
+    
+    def bmi(input_tensor):
         input_tensor = input_tensor[..., :1]
-        noise = torch.normal(noise_mean, noise_stdev, input_tensor.shape)
-        return input_tensor + noise
+        return torch.normal((torch.full_like(input_tensor, 27.) - 0.01 * input_tensor), 0.7)
 
-    def Z(input_tensor, noise_mean=0, noise_stdev=0):
-        input_tensor = input_tensor[..., :1]
-        noise = torch.normal(noise_mean, noise_stdev, input_tensor.shape)
-        return (torch.exp(-input_tensor)) + noise
+    def aspirin(input_tensor):
+        input_tensor = input_tensor[..., :2]
+        new_tensor = torch.tensor([[-8 + 0.1 * i[0] + 0.03 * i[1]] for i in input_tensor])
+        return torch.nn.Sigmoid()(new_tensor)
 
-    def Y(input_tensor, noise_mean=0, noise_stdev=0):
-        input_tensor = input_tensor[..., :1]
-        noise = torch.normal(noise_mean, noise_stdev, input_tensor.shape)
-        return ((torch.cos(input_tensor)) - (torch.exp(-input_tensor / 20))) + noise
+    def statin(input_tensor):
+        input_tensor = input_tensor[..., :2]
+        new_tensor = torch.tensor([[-13 + 0.1 * i[0] + 0.2 * i[1]] for i in input_tensor])
+        return torch.nn.Sigmoid()(new_tensor)
+    
+    def cancer(input_tensor):
+        input_tensor = input_tensor[..., :4]
+        new_tensor = torch.tensor([[2.2 - 0.05 * i[0] + 0.01 * i[1] - 0.04 * i[2] + 0.02 * i[3]] for i in input_tensor])
+        return torch.nn.Sigmoid()(new_tensor)
+    
+    def psa(input_tensor):
+        
+
     # def X(input, noise_mean=0, noise_stdev=0):
     #     return input + np.random.normal(noise_mean, noise_stdev)
 
@@ -36,9 +47,7 @@ class ToyGraph(object):
         # Objective function
         self.obj_func = {'X': lambda x: ToyGraph.Y(ToyGraph.Z(ToyGraph.X(x))),
                          'Z': lambda z: ToyGraph.Y(ToyGraph.Z(z)),
-                         'Y': lambda y: ToyGraph.Y(y),
-                         'ZX': lambda zx: ToyGraph.Y(ToyGraph.Z(zx)),
-                         'XZ': lambda zx: ToyGraph.Y(ToyGraph.Z(zx)),}
+                         'Y': lambda y: ToyGraph.Y(y)}
         # Generate observational data
         #obs_data_x = [ToyGraph.X(np.random.normal(0, 1), noise_stdev=1) for x in range(0,1000)]
         obs_data_x = ToyGraph.X(torch.randn(1000, 1).view(-1,1), noise_stdev=1)
