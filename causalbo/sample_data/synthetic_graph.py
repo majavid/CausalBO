@@ -26,8 +26,10 @@ class SyntheticGraph(object):
         return torch.nn.Sigmoid()(new_tensor)
     
     def psa(input_tensor):
-        
-
+        input_tensor = input_tensor[..., :5]
+        new_tensor = torch.normal([[6.8 + 0.04 * i[0] - 0.15 * i[1] -0.6 * i[2] + 0.55 * i[3] + i[4]] for i in input_tensor], 0.4)
+        return new_tensor
+    
     # def X(input, noise_mean=0, noise_stdev=0):
     #     return input + np.random.normal(noise_mean, noise_stdev)
 

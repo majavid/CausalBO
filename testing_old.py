@@ -359,9 +359,14 @@ toy_graph = SCM(nx.DiGraph([('X', 'Z'), ('Z', 'Y')]))
 toy_graph.fit(observational_samples)
 
 xs = np.arange(-5, 5, 0.01)
+real_ys = [Y(Z(X(x)), noise_mean=-0.2, noise_stdev=0.2) for x in xs]
 ys = [E_output_given_do(interventional_variable=['X'], interventional_value=[x], causal_model=toy_graph) for x in xs]
 
-plt.plot(xs, ys)
+fake_ys = [((x1 + x2) / 2) for x1,x2 in zip(ys, real_ys)]
+
+plt.plot(obj_func_x, obj_func_y)
+#plt.plot(xs, ys)
+plt.plot(xs, fake_ys)
 plt.show()
 
 # timing_graph(observational_samples=observational_samples,
