@@ -17,11 +17,12 @@ observational_samples['X'] = torch.flatten(obj_data_x).tolist()
 observational_samples['Z'] = torch.flatten(obj_data_z).tolist()
 observational_samples['Y'] = torch.flatten(obj_data_y).tolist()
 
-graph.graph.fit(observational_samples)
+#graph.graph.fit(observational_samples)
 
-cm = CausalMean(interventional_variable=['X'], causal_model=graph.graph)
+#cm = CausalMean(interventional_variable=['X'], causal_model=graph.graph)
 
-output = cm.forward(obj_data_x)
-plt.plot(obj_data_x, output)
+#output = cm.forward(obj_data_x)
+#plt.plot(obj_data_x, output)
+plt.plot(graph.objective_samples['X'], graph.objective_samples['Y'])
 plt.show()
 ##TODO : REPLACE OBJECTIVE FUNCTION WITH OBJECTIVE FUNCTION APPROXIMATION LIKE SO USING OBJ DATA FIT TO GRAPH

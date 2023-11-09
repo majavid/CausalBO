@@ -19,7 +19,9 @@ def bounds_to_hull_points(domains: dict[list[float]]):
 def calculate_epsilon(observational_samples: DataFrame, interventional_domain: dict[list[float]], n_max: int):
     n = observational_samples.shape[0]
 
-    df = observational_samples
+    # Do not include unobserved confounders in the convex hull.
+    df = observational_samples[list(interventional_domain.keys())]
+
     for k in interventional_domain.keys():
         df = df[ (df[k] >= interventional_domain[k][0])
                & (df[k] <= interventional_domain[k][1])]    
@@ -28,6 +30,7 @@ def calculate_epsilon(observational_samples: DataFrame, interventional_domain: d
                ConvexHull(
                     bounds_to_hull_points(interventional_domain))
                 .volume) * (n / n_max)
+    
     return epsilon
 
 # Convert DataFrame to torch compatible tensor.
