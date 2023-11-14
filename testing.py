@@ -20,8 +20,12 @@ from ananke.datasets import load_conditionally_ignorable_data
 import matplotlib.pyplot as plt
 
 p = PSAGraph()
-exploration_set = [['ASPIRIN'], ['STATIN'], ['ASPIRIN', 'STATIN']]
-CBOLoop(p.observational_samples, p.graph, exploration_set, 40, 100, 40, 1000, p.interventional_domain, "min", p.true_graph, early_stopping_iters=10, verbose=True)
+exploration_set = [['ASPIRIN', 'STATIN']]
+CBOLoop(p.observational_samples,
+        p.graph,
+        exploration_set,
+        40, 400, 40, 1000,
+        p.interventional_domain, "min", p.true_graph, early_stopping_iters=10, verbose=True)
 
 # t = ToyGraph()
 # exploration_set = [['X', 'Z']]

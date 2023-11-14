@@ -25,11 +25,14 @@ def calculate_epsilon(observational_samples: DataFrame, interventional_domain: d
     for k in interventional_domain.keys():
         df = df[ (df[k] >= interventional_domain[k][0])
                & (df[k] <= interventional_domain[k][1])]    
-        
-    epsilon = (ConvexHull(df).volume / 
-               ConvexHull(
+    try:
+        epsilon =  (ConvexHull(df).volume / 
+                    ConvexHull(
                     bounds_to_hull_points(interventional_domain))
-                .volume) * (n / n_max)
+                    .volume) * (n / n_max)
+    except:
+        # If add points happen to be discarded due to lying outside interventional domain, we need to sample new points.
+        epsilon = 1
     
     return epsilon
 

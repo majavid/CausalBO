@@ -92,8 +92,8 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
         # Intervene
         else:
             # Fixed cost intervention, TODO: Add variable cost
-            total_cost += 10
-            cost_over_time.append(total_cost)
+            
+            
             print('Intervening...')
 
             solutions = {}
@@ -101,6 +101,7 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
             # Compute EI(S) / Co(S) for each set S in ES
             # TODO: Co(S) means nothing without variable cost intervention. Beyond scope for now?
             for s in exploration_set:
+                total_cost += 10 * len(s)
                 set_identifier = ''.join(s)
                 gp: SingleTaskGP = GPs[set_identifier]
                 interventional_data: DataFrame = D_i[set_identifier]
@@ -131,8 +132,7 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
             
             # Perform intervention. Generate ground truth result for sampling at best point.
             # NOTE: "Ground truth" here relies on causal estimation, so may not be 100% accurate. Depends on DoWhy's accuracy. "Ground truth" generated from non-noisy SEM + DoWhy causal model.
-            new_y = torch.tensor([ E_output_given_do(interventional_variable=best_point[2], interventional_value=np.array(torch.flatten(best_point[1])), causal_model=objective_function) ]) #objective_function[best_point[0]](best_point[1]) #    #
-
+            new_y = torch.tensor([ E_output_given_do(interventional_variable=best_point[2], interventional_value=np.array(torch.flatten(best_point[1])), causal_model=objective_function) ])
             if verbose:
                 print(f'Optimal set-value pair: {best_point[0]} - {x_values}')
 
@@ -162,6 +162,8 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
             GPs[best_point[0]] = gp
             D_i[best_point[0]] = interventional_data
 
+            cost_over_time.append(total_cost)
+
             if verbose:
                 print('Updating global optimum...')
 
@@ -175,7 +177,7 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
             else:
                 num_iters_without_improvement += 1
 
-    return (global_optimum, global_optimal_set, GPs[global_optimal_set], D_i[global_optimal_set], D_o, cost_over_time, optimum_over_time)
+    return (global_optimum, global_optimal_set, GPs[''.join(global_optimal_set)], D_i[''.join(global_optimal_set)], D_o, cost_over_time, optimum_over_time)
 
 
 

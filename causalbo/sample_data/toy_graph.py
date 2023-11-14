@@ -30,15 +30,6 @@ class ToyGraph(object):
         self.graph = SCM([('X', 'Z'), ('Z', 'Y')])
         self.true_graph = SCM([('X', 'Z'), ('Z', 'Y')])
 
-
-        # Objective function
-        self.obj_func = {'X': lambda x: ToyGraph.Y(ToyGraph.Z(ToyGraph.X(x))),
-                         'Z': lambda z: ToyGraph.Y(ToyGraph.Z(z)),
-                         'Y': lambda y: ToyGraph.Y(y),
-                         'ZX': lambda zx: ToyGraph.Y(ToyGraph.Z(zx)),
-                         'XZ': lambda zx: ToyGraph.Y(ToyGraph.Z(zx)),}
-
-
         # Generate observational data
         obs_data_x = ToyGraph.X(torch.linspace(-5, 5, num_observations).view(-1,1), noise_stdev=1)
         obs_data_z = ToyGraph.Z(obs_data_x, noise_stdev=1)
@@ -48,6 +39,8 @@ class ToyGraph(object):
         self.observational_samples['X'] = torch.flatten(obs_data_x).tolist()
         self.observational_samples['Z'] = torch.flatten(obs_data_z).tolist()
         self.observational_samples['Y'] = torch.flatten(obs_data_y).tolist()
+        # Shuffle dataframe into random order
+        self.observational_samples.sample(frac=1)
 
         # Generate objective data
         obs_data_x = ToyGraph.X(torch.linspace(-5, 5, num_objective_points).view(-1,1))

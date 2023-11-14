@@ -3,6 +3,11 @@ from causalbo.do_calculus import SCM
 import torch
 
 class SyntheticGraph(object):
+
+    # BEDACY
+    def U1(input_tensor, noise_mean=0, noise_stdev=0):
+        return torch.normal(noise_mean, noise_stdev, input_tensor.shape)
+
     def age(num_data_points):
         return (55 - 75) * torch.rand(num_data_points, 1) + 75
     
