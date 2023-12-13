@@ -3,7 +3,7 @@ from gpytorch.means.mean import Mean
 from gpytorch.kernels import RBFKernel
 import torch
 
-### MEAN FUNC, COVAR KERNEL ###
+# Mean function and covariance kernel
 
 #TODO: assert input shape matches num interventional nodes
 class CausalMean(Mean):
@@ -15,6 +15,8 @@ class CausalMean(Mean):
 
     def forward(self, x: torch.Tensor):
         shape = x.shape
+        if shape[-1] != len(self.interventional_variable):
+            raise Exception("Shape of data does not match number of interventional variables!")
         # Flatten input tensor to list of lists for DoWhy to play nice with.
         x_reshape = torch.reshape(x, (-1, shape[-1]))
         mean_output = torch.tensor([
@@ -40,10 +42,12 @@ class CausalRBF(RBFKernel):
     def forward(self, x1, x2, diag=False, **params):
         x1_shape = x1.shape
         x2_shape = x2.shape
+        if x1_shape[-1] != x2_shape[-1] != len(self.interventional_variable):
+            raise Exception("Shape of data does not match number of interventional variables!")
         
         # Flatten input tensor to list of lists for DoWhy to play nice with.
-        x1_reshape = torch.reshape(x1, (-1, x1.shape[-1]))
-        x2_reshape = torch.reshape(x2, (-1, x2.shape[-1]))
+        x1_reshape = torch.reshape(x1, (-1, x1_shape[-1]))
+        x2_reshape = torch.reshape(x2, (-1, x2_shape[-1]))
 
         # Calculate variance of each point.
         variances_x1 = torch.sqrt(torch.tensor([

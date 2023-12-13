@@ -2,8 +2,7 @@ from networkx import DiGraph, draw
 from dowhy import gcm
 from numpy import mean, var
 
-### SCM AND DO-CALCULUS ###
-
+#SCM and do-calculus operations
 class SCM():
     # Declare SCM as nx.DiGraph, auto calculates output node
     def __init__(self, graph: DiGraph | list):
@@ -35,7 +34,7 @@ class SCM():
                                              #num_samples_to_draw=100)
         return samples
     
-    # draw graph
+    # Draw graph
     def draw(self):
         draw(self.graph, with_labels=True)
 

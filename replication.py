@@ -102,7 +102,7 @@ print(global_optimum_over_time_standard)
 (global_optimum, global_optimal_set, gp, D_i, D_o, cost_over_time_causal, global_optimum_over_time_causal) = CBOLoop(
         observational_samples=toy_graph.observational_samples,
         graph=toy_graph.graph,
-        exploration_set=[['ASPIRIN'], ['STATIN'], ['ASPIRIN', 'STATIN']], # We are allowed to examine fewer variables here since we know the POMIS is ['Z'] and the causal GP can take advantage of this, while the standard cannot
+        exploration_set=[['ASPIRIN', 'STATIN']], # We are allowed to examine fewer variables here since we know the POMIS is ['Z'] and the causal GP can take advantage of this, while the standard cannot
         num_steps=10,
         num_initial_obs=NUM_INITIAL_OBSERVATIONS,
         num_obs_per_step=20,

@@ -12,6 +12,7 @@ from botorch.fit import fit_gpytorch_model
 from botorch.acquisition import ExpectedImprovement
 from botorch.optim import optimize_acqf
 
+# Runs CBO algorithm from V. Aglietti et al.
 def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[list[str]], 
             num_steps: int, num_initial_obs: int, num_obs_per_step: int, num_max_allowed_obs: int,
             interventional_domain: dict[list[float]], type_trial: Literal['min', 'max'], objective_function: SCM,
@@ -91,9 +92,6 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
 
         # Intervene
         else:
-            # Fixed cost intervention, TODO: Add variable cost
-            
-            
             print('Intervening...')
 
             solutions = {}
@@ -130,6 +128,7 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
             best_point = solutions[max(solutions.keys())]
             x_values = torch.flatten(best_point[1]).tolist()
 
+            # Fixed cost intervention, TODO: Add variable cost
             total_cost += 10 * len(best_point[2])
             
             # Perform intervention. Generate ground truth result for sampling at best point.
@@ -138,7 +137,6 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
             if verbose:
                 print(f'Optimal set-value pair: {best_point[0]} - {x_values}')
 
-            # This is horrendous, fix later
             if verbose:
                 print(f'Updating D_i for {best_point[0]}...')
 
@@ -176,9 +174,10 @@ def CBOLoop(observational_samples: DataFrame, graph: SCM, exploration_set: list[
                 global_optimal_value = torch.flatten(best_point[1]).tolist()
             else:
                 num_iters_without_improvement += 1
-                
+    
     optimum_over_time.append(global_optimum)
     cost_over_time.append(total_cost)
+
     return (global_optimum, global_optimal_set, GPs[''.join(global_optimal_set)], D_i[''.join(global_optimal_set)], D_o, cost_over_time, optimum_over_time)
 
 

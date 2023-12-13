@@ -112,6 +112,9 @@ class PSAGraph(object):
         # Remove invalid samples caused by randomness
         self.observational_samples = self.observational_samples.drop(
                                         self.observational_samples[self.observational_samples['PSA'] <= 0].index)
+        
+        # Fit graph to observational data.
+        self.graph.fit(self.observational_samples)
 
         # Generate objective data
         obs_data_age = PSAGraph.age(num_objective_points)
@@ -137,6 +140,7 @@ class PSAGraph(object):
         # Fit graph to objective data.
         self.true_graph.fit(self.objective_samples)        
 
+    # Wrapper for networkx draw()
     def draw(self):
         self.graph.draw()
 

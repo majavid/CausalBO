@@ -31,7 +31,7 @@ def calculate_epsilon(observational_samples: DataFrame, interventional_domain: d
                     bounds_to_hull_points(interventional_domain))
                     .volume) * (n / n_max)
     except:
-        # If add points happen to be discarded due to lying outside interventional domain, we need to sample new points.
+        # If all points happen to be discarded due to lying outside interventional domain, we need to sample new points.
         epsilon = 1
     
     return epsilon
