@@ -18,7 +18,7 @@ from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore")
 
-NUM_INITIAL_OBSERVATIONS = 400 
+NUM_INITIAL_OBSERVATIONS = 40
 INTERVENTION_COST = 10
 OBSERVATION_COST = 1
 
@@ -33,7 +33,7 @@ train_y_standard = df_to_tensor(toy_graph.observational_samples.loc[:NUM_INITIAL
 # Store total cost
 total_cost_standard = NUM_INITIAL_OBSERVATIONS
 # Store optimal value
-global_optimum_standard = max(toy_graph.observational_samples[toy_graph.graph.output_node])
+global_optimum_standard = max(toy_graph.observational_samples[toy_graph.graph.output_node][:NUM_INITIAL_OBSERVATIONS])
 # Store changes in cost over time
 cost_over_time_standard = []
 # Store optimum over time
@@ -49,14 +49,15 @@ mll = ExactMarginalLogLikelihood(gp_standard.likelihood, gp_standard)
 acqf = ExpectedImprovement(model=gp_standard, best_f=global_optimum_standard, maximize=False)
 fit_gpytorch_model(mll)
 
-global_optimum_over_time_standard.append(global_optimum_standard)
-cost_over_time_standard.append(total_cost_standard)
+
 
 true_ys = torch.tensor([[]]) #torch.empty_like(train_y_standard)
 #print(true_ys)
 
 # Optimization loop
 for i in range(num_iterations):
+    global_optimum_over_time_standard.append(global_optimum_standard)
+    cost_over_time_standard.append(total_cost_standard)
     print(f'Standard GP, iteration {i}')
     candidate, _ = optimize_acqf(
         acq_function=acqf,
@@ -91,9 +92,9 @@ for i in range(num_iterations):
 
     # Update cost and optimum
     total_cost_standard += INTERVENTION_COST * len(intervention_set_standard)
-    cost_over_time_standard.append(total_cost_standard)
-    global_optimum_over_time_standard.append(global_optimum_standard)
 
+global_optimum_over_time_standard.append(global_optimum_standard)
+cost_over_time_standard.append(total_cost_standard)
 print(global_optimum_over_time_standard)
 
 
@@ -101,7 +102,7 @@ print(global_optimum_over_time_standard)
 (global_optimum, global_optimal_set, gp, D_i, D_o, cost_over_time_causal, global_optimum_over_time_causal) = CBOLoop(
         observational_samples=toy_graph.observational_samples,
         graph=toy_graph.graph,
-        exploration_set=[['ASPIRIN', 'STATIN']], # We are allowed to examine fewer variables here since we know the POMIS is ['Z'] and the causal GP can take advantage of this, while the standard cannot
+        exploration_set=[['ASPIRIN'], ['STATIN'], ['ASPIRIN', 'STATIN']], # We are allowed to examine fewer variables here since we know the POMIS is ['Z'] and the causal GP can take advantage of this, while the standard cannot
         num_steps=10,
         num_initial_obs=NUM_INITIAL_OBSERVATIONS,
         num_obs_per_step=20,
@@ -112,7 +113,7 @@ print(global_optimum_over_time_standard)
         early_stopping_iters=10, verbose=True)
 
 
-plt.plot([0] + cost_over_time_standard, [global_optimum_over_time_standard[0]] + global_optimum_over_time_standard, "-o")
+plt.plot(cost_over_time_standard, global_optimum_over_time_standard, "-o")
 
 plt.plot(cost_over_time_causal, global_optimum_over_time_causal, "-o")
 
@@ -123,23 +124,4 @@ plt.legend(['Standard GP', 'Causal GP'])
 plt.xlabel("Total Cost\nObservation costs 1 unit per point, intervention costs 10 units per variable")
 plt.ylabel("Global Optimum")
 plt.title("Standard GP vs Causal GP: Medical Graph, 10 iterations")
-plt.show()
-
-# xs = np.arange(-5, 20, 0.1)
-# toy_graph.graph.fit(toy_graph.observational_samples)
-# ys = [E_output_given_do(interventional_variable=['Z'], interventional_value=[x], causal_model=toy_graph.graph) for x in xs]
-
-obj_func_x = torch.linspace(*toy_graph.interventional_domain['Z'], 1000).view(-1,1)
-obj_func_y = toy_graph.obj_func['X'](obj_func_x)
-true_optimum = torch.min(obj_func_y)
-plt.axhline(true_optimum, color='r')
-#plt.plot(obj_func_x, obj_func_y)
-#plt.plot(xs,ys)
-#plt.scatter(train_input_standard[:,0], train_y_standard)
-plt.plot(cost_over_time_standard, global_optimum_over_time_standard)
-# plt.plot(cost_over_time_causal, global_optimum_over_time_causal)
-plt.title('Causal GP vs Standard GP performance')
-plt.xlabel('Total Cost')
-plt.ylabel('Calculated Global Optimum')
-plt.legend(['True global optimum', 'Standard GP', 'Causal GP'])
 plt.show()
